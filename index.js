@@ -68,7 +68,7 @@ canvas.addEventListener('mousemove', function(e) {
             if(path?.vectorSequence.length >= 2) {
                 const prevVector = path?.vectorSequence[path.vectorSequence.length-2];
                 const nextVector = path?.vectorSequence[path.vectorSequence.length-1];
-                if(prevVector?.angleBetween(nextVector) >= .7) {
+                if(prevVector?.angleBetween(nextVector) >= Math.PI/6) {
                     console.log('Sharp angle!')
                     path?.nodes.push(path.pointSequence[path.pointSequence.length - 1]);
                 }
@@ -80,7 +80,12 @@ canvas.addEventListener('mousemove', function(e) {
 
 canvas.addEventListener('mouseup', (e) => {
     mouseup = true;
-    path.nodes.push(new Point(getCursorPosition(canvas, e)))
+    const lastPoint = new Point(getCursorPosition(canvas, e));
+    if(path.nodes[0].distanceTo(lastPoint) <= 100) {
+        path.nodes.push(path.nodes[0]);
+    } else {
+        path.nodes.push(lastPoint);
+    }
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     path.nodes.forEach((node, index, nodes) => {
         ctx.beginPath();
