@@ -43,30 +43,62 @@ function getCursorPosition(canvas, event) {
 
 let mouseup = true;
 let path;
-const canvas = document.querySelector('canvas')
+const canvas = document.querySelector('canvas');
+var ctx = canvas.getContext('2d');
 
 canvas.addEventListener('mousedown', (e) => {
     path = new VectorPath;
     path?.pointSequence.push(new Point(getCursorPosition(canvas, e)))
+    path?.nodes.push(path.pointSequence[0])
     mouseup = false;
 })
 
 canvas.addEventListener('mousemove', function(e) {
-    path?.pointSequence.push(new Point(getCursorPosition(canvas, e)))
-    path?.vectorSequence.push(new Vector({
-        begin: path.pointSequence[path.pointSequence.length - 2],
-        end: path.pointSequence[path.pointSequence.length - 1]
-    }))
-    const prevVector = path?.vectorSequence[path.vectorSequence.length-2];
-    const nextVector = path?.vectorSequence[path.vectorSequence.length-1];
-    if(prevVector?.angleBetween(nextVector) >= 1 && prevVector?.angleBetween(nextVector) <= 2.14) {
-        console.log('Sharp angle!')
-        path?.nodes.push(path.pointSequence[path.pointSequence.length - 1]);
+    if(!mouseup) {
+        const lastPoint = new Point(getCursorPosition(canvas, e));
+        ctx.beginPath();
+        ctx.arc(lastPoint.x, lastPoint.y, 2, 0, 2 * Math.PI);
+        ctx.fill();
+        if(path?.pointSequence[path.pointSequence.length - 1].distanceTo(lastPoint) >= 20) {
+            path?.pointSequence.push(lastPoint)
+            path?.vectorSequence.push(new Vector({
+                begin: path.pointSequence[path.pointSequence.length - 2],
+                end: path.pointSequence[path.pointSequence.length - 1]
+            }))
+            if(path?.vectorSequence.length >= 2) {
+                const prevVector = path?.vectorSequence[path.vectorSequence.length-2];
+                const nextVector = path?.vectorSequence[path.vectorSequence.length-1];
+                if(prevVector?.angleBetween(nextVector) >= .7) {
+                    console.log('Sharp angle!')
+                    path?.nodes.push(path.pointSequence[path.pointSequence.length - 1]);
+                }
+            }
+        }
     }
 })
 
+
 canvas.addEventListener('mouseup', (e) => {
     mouseup = true;
+    path.nodes.push(new Point(getCursorPosition(canvas, e)))
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    path.nodes.forEach((node, index, nodes) => {
+        ctx.beginPath();
+        ctx.arc(node.x, node.y, 2, 0, 2 * Math.PI);
+        ctx.fill();
+
+        if(index === nodes.length - 1) {
+            ctx.beginPath();
+            ctx.moveTo(node.x, node.y);
+            ctx.lineTo(nodes[0].x, nodes[0].y);
+            ctx.stroke();
+        } else {
+            ctx.beginPath();
+            ctx.moveTo(node.x, node.y);
+            ctx.lineTo(nodes[index + 1].x, nodes[index + 1].y);
+            ctx.stroke();
+        }
+    })
     console.log('Final path:', path);
     console.log('Nodes: ', path.nodes);
 })
